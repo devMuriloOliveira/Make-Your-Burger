@@ -2,7 +2,7 @@
   <div class="main-container">
       <banner/>
       <h1>formulario</h1>
-      <burger-form/>
+      <BurgerForm/>
   </div>
 </template>
 

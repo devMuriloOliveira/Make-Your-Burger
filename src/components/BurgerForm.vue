@@ -1,7 +1,7 @@
 <template>
-  <Message :msg="msg" v-show="msg" />
+  <Message :msg="msg" v-show="msg"/>
   <div>
-    <form id="burger-form" method="POST" @submit="createBurger">
+    <form id="burger-form" @submit.prevent="createBurger">
       <div class="input-container">
         <label for="nome">Nome do cliente:</label>
         <input type="text" id="nome" name="nome" v-model="nome" placeholder="Digite o seu nome">
@@ -35,7 +35,11 @@
 </template>
 
 <script>
+import Message from './Message.vue';
 export default {
+  components: { 
+    Message 
+    },
     name: 'BurgerForm',
 
     data(){
@@ -47,7 +51,6 @@ export default {
             pao: null,
             carne: null,
             opcionais: [],
-            status: "Solicitado",
             msg: null
         }
     },
@@ -59,6 +62,52 @@ export default {
             this.carnes = data.carnes;
             this.opcionaisdata = data.opcionais;
         },  
+        async createBurger() {
+          // Buscar todos os pedidos
+          const pedidosReq = await fetch('http://localhost:3000/burgers');
+          const pedidos = await pedidosReq.json();
+
+          // Verifica se há pedidos e calcula o último ID corretamente
+          let lastId = 0;
+          if (pedidos.length > 0) {
+            const ids = pedidos
+              .map(p => Number(p.id))     // Garante que o id seja número
+              .filter(id => !isNaN(id));  // Tira qualquer valor inválido
+            lastId = ids.length > 0 ? Math.max(...ids) : 0;
+          }
+
+          // Montar o novo pedido com ID sequencial
+          const novoPedido = {
+            id: lastId + 1,
+            nome: this.nome,
+            carne: this.carne,
+            pao: this.pao,
+            opcionais: Array.from(this.opcionais),
+            status: "Solicitado"
+          };
+
+          // Enviar o novo pedido
+          await fetch('http://localhost:3000/burgers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(novoPedido)
+          });
+
+          // Usar o ID que você já sabe
+          this.msg = `Pedido nº ${novoPedido.id} foi realizado com sucesso!`;
+
+          setTimeout(() => {
+            this.msg = null;
+          }, 3000);
+
+          this.nome = "";
+          this.pao = "";
+          this.carne = "";
+          this.opcionais = [];
+        }
+
     },
     mounted(){
         this.getIngredients();
@@ -67,11 +116,12 @@ export default {
 </script>
 
 <style scoped>
+  /* Estilo do formulário */
   #burger-form {
     max-width: 400px;
     margin: 0 auto;
   }
-
+  
   .input-container {
     display: flex;
     flex-direction: column;
@@ -81,7 +131,7 @@ export default {
   label {
     font-weight: bold;
     margin-bottom: 15px;
-    color: #222;;
+    color: #222;
     padding: 5px 10px;
     border-left: 4px solid #fcba03;
   }
